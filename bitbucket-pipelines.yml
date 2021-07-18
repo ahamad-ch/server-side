@@ -1,0 +1,91 @@
+image: public.ecr.aws/v9n7x5u6/archisacademy/custom-pipeline-image
+clone:
+  depth: full              # SonarCloud scanner needs the full history to assign issues properly
+
+definitions:
+  services:
+    docker:
+      memory: 3072
+  caches:
+    sonar: ~/.sonar/cache  # Caching SonarCloud artifacts will speed up your build
+  steps:
+    - step: &build-test-sonarcloud
+        name: Build, test and analyze on SonarCloud
+        caches:
+          - docker
+          - sonar
+        script:
+          - pipe: sonarsource/sonarcloud-scan:1.2.0
+    - step: &check-quality-gate-sonarcloud
+        name: Check the Quality Gate on SonarCloud
+        caches:
+          - docker
+        script:
+          - pipe: sonarsource/sonarcloud-quality-gate:0.1.4
+    - step: &docket-build-push
+        name: Build Docker Image and Push to container registry
+        caches:
+          - docker
+        script:
+          - IMAGE="545432586170.dkr.ecr.eu-central-1.amazonaws.com/archisacademy/${SERVICE_NAME}"
+          - aws configure set aws_access_key_id "${AWS_KEY}"
+          - aws configure set aws_secret_access_key "${AWS_SECRET}"
+          - aws ecr get-login-password --region eu-central-1 | docker login --username AWS --password-stdin 545432586170.dkr.ecr.eu-central-1.amazonaws.com
+          - docker build -t $IMAGE -f Dockerfile.staging .
+          - docker push $IMAGE
+        services:
+          - docker
+    - step: &docker-test-clean-up
+        name: Docker test clean up
+        script:
+          - pipe: atlassian/ssh-run:0.2.8
+            variables:
+              SSH_USER: 'ec2-user'
+              SERVER: '18.198.171.123'
+              COMMAND: "docker system prune -f"
+    - step: &re-run-docker-compose
+        name: Rerun docker-compose
+        caches:
+          - docker
+        script:
+          - pipe: atlassian/ssh-run:0.2.8
+            variables:
+              SSH_USER: 'ec2-user'
+              SERVER: '18.198.171.123'
+              COMMAND: "aws ecr get-login-password --region eu-central-1 | docker login --username AWS --password-stdin 545432586170.dkr.ecr.eu-central-1.amazonaws.com && cd archis/dev-ops/ && git pull && docker-compose -f docker-compose.staging.yml pull ${SERVICE_NAME} && docker-compose -f docker-compose.staging.yml up -d --build ${SERVICE_NAME}"
+    - step: &docker-prod-clean-up
+        name: Docker prod clean up
+        script:
+          - pipe: atlassian/ssh-run:0.2.8
+            variables:
+              SSH_USER: 'ec2-user'
+              SERVER: '3.125.130.113'
+              COMMAND: "docker system prune -f"
+    - step: &push-to-production
+        name: Push to production
+        caches:
+          - docker
+        script:
+          - pipe: atlassian/ssh-run:0.2.8
+            variables:
+              SSH_USER: 'ec2-user'
+              SERVER: '3.125.130.113'
+              COMMAND: "aws ecr get-login-password --region eu-central-1 | docker login --username AWS --password-stdin 545432586170.dkr.ecr.eu-central-1.amazonaws.com && cd archis/dev-ops/ && git pull && docker-compose -f docker-compose.prod.yml pull ${SERVICE_NAME} && docker-compose -f docker-compose.prod.yml up -d --build ${SERVICE_NAME}"
+
+pipelines:
+  default:
+    - step: *build-test-sonarcloud
+    # - step: *check-quality-gate-sonarcloud
+  branches:
+    master:
+      # - step: *healthcheck-and-postman-tests
+      - step: *docket-build-push
+      - step: *docker-test-clean-up
+      - step: *re-run-docker-compose
+      - step: *docker-test-clean-up
+  custom:
+    release:
+      - step: *docket-build-push
+      - step: *docker-prod-clean-up
+      - step: *push-to-production
+      - step: *docker-prod-clean-up

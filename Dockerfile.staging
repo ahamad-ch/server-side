@@ -1,0 +1,15 @@
+FROM node:12-alpine
+
+WORKDIR '/app/api'
+
+COPY ./package* ./
+
+RUN npm install --only=production
+
+ENV NODE_ENV=staging
+
+COPY ./ ./
+
+EXPOSE 3003
+
+CMD ["sh","-c","npm run start"]
