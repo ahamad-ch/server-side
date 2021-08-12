@@ -1,7 +1,7 @@
 {
-  "name": "admin-services",
+  "name": "server-side",
   "version": "1.0.0",
-  "description": "Service which provides all the Admin services for Archi's",
+  "description": "Node.js Serverside",
   "main": "index.js",
   "scripts": {
     "start": "node server.js",
@@ -27,14 +27,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git@bitbucket.org:academyarchis/admin-services.git"
+    "url": "git@github.com:ahamad-ch/server-side.git"
   },
-  "author": "tofi",
+  "author": "ahamad",
   "license": "ISC",
   "bugs": {
     "url": "https://archisresearch.atlassian.net/secure/RapidBoard.jspa"
   },
-  "homepage": "https://bitbucket.org/academyarchis/mail-service/src/master/README.md",
+  "homepage": "https://github.com/ahamad-ch/server-side/edit/master/README.md",
   "devDependencies": {
     "babel-eslint": "^10.1.0",
     "eslint": "^7.5.0",

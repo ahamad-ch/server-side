@@ -13,7 +13,7 @@ const swaggerOptions = {
     info: {
       version: "1.0.0",
       title: "BoilerPlate API",
-      description: "Archis API BoilerPlate Information",
+      description: "API BoilerPlate Information",
     },
   },
   apis: ["src/routes/**/*.js"],
@@ -22,12 +22,7 @@ const swaggerOptions = {
 const app = express()
 
 // cors configuration
-const whitelist = [
-  "https://www.archisacademy.com",
-  "http://localhost",
-  "http://localhost:3000",
-  "https://test.archis.company",
-]
+const whitelist = []
 
 const options = {
   origin: function (origin, callback) {
@@ -65,4 +60,4 @@ app.use("/api-docs", apiDocsAccess, swaggerUi.serve, swaggerUi.setup(swaggerDocs
 // routes
 app.use(routes)
 
-app.listen(process.env.PORT || 3003, () => console.log("app started..."))
+app.listen(process.env.PORT || 1000, () => console.log("app started..."))

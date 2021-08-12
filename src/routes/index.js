@@ -11,5 +11,5 @@ const app = (module.exports = require("express")())
  */
 
 app.use("/welcome", (req, res) => {
-  res.json("Welcome To Admin Services.")
+  res.json("Welcome To Sedver Side Application.")
 })
